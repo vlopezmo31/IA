@@ -12,7 +12,7 @@ class Board():
     -----------
     board : list[list[Piece]]
         represents a chess board
-        
+
     turn : bool
         True if white's turn
 
@@ -29,7 +29,7 @@ class Board():
 
     move(start:tup, to:tup) -> None
         Moves the piece at `start` to `to` if possible. Otherwise, does nothing.
-        
+
     """
 
     def __init__(self, initState, xinit=True):
@@ -85,7 +85,7 @@ class Board():
             for i in range(8):
                 self.board[1][i] = piece.Pawn(False)
 
-        # assign pieces 
+        # assign pieces
         else:
 
             self.currentState = initState
@@ -150,13 +150,12 @@ class Board():
         isSameState = isSameState1 and isSameState2
         return isSameState
 
-
     def getListNextStatesW(self, mypieces):
 
         """
         Gets the list of next possible states given the currentStateW
         for each kind of piece
-        
+
         """
 
         self.listNextStates = []
@@ -187,7 +186,7 @@ class Board():
                     aa = listPotentialNextStates[k]
                     if aa[0] > -1 and aa[0] < 8 and aa[1] > -1 and aa[1] < 8 and listPotentialNextStates[
                         k] not in listOtherPieces:
-                        #and listPotentialNextStates[k] not in self.currentStateB:
+                        # and listPotentialNextStates[k] not in self.currentStateB:
 
                         if self.board[aa[0]][aa[1]] == None or not self.board[aa[0]][aa[1]].color:
                             self.listSuccessorStates.append([aa[0], aa[1], aa[2]])
@@ -218,13 +217,13 @@ class Board():
 
                 while (ix > 0):
                     ix = ix - 1
-                    #Ocupem la posició si és negra
+                    # Ocupem la posició si és negra
                     if self.board[ix][iy] != None:
                         if not self.board[ix][iy].color:
                             listPotentialNextStates.append([ix, iy, 2])
                         break
 
-                    elif self.board[ix][iy] == None :
+                    elif self.board[ix][iy] == None:
                         listPotentialNextStates.append([ix, iy, 2])
 
                 ix = mypiece[0]
@@ -521,11 +520,11 @@ class Board():
 
             listPotentialNextStates = []
 
-            #print(str(self.board[mypiece[0]][mypiece[1]]))
+            # print(str(self.board[mypiece[0]][mypiece[1]]))
 
             if (self.board[mypiece[0]][mypiece[1]].name == 'K'):
 
-                #print(" mypiece at  ",mypiece[0],mypiece[1])
+                # print(" mypiece at  ",mypiece[0],mypiece[1])
                 listPotentialNextStates = [[mypiece[0] + 1, mypiece[1], 12], \
                                            [mypiece[0] + 1, mypiece[1] - 1, 12], [mypiece[0], mypiece[1] - 1, 12], \
                                            [mypiece[0] - 1, mypiece[1] - 1, 12], \
@@ -537,7 +536,7 @@ class Board():
                     aa = listPotentialNextStates[k]
                     if aa[0] > -1 and aa[0] < 8 and aa[1] > -1 and aa[1] < 8 and listPotentialNextStates[
                         k] not in listOtherPieces:
-                        #listPotentialNextStates[k] not in self.currentStateW:
+                        # listPotentialNextStates[k] not in self.currentStateW:
 
                         if self.board[aa[0]][aa[1]] == None or self.board[aa[0]][aa[1]].color:
                             self.listSuccessorStates.append([aa[0], aa[1], aa[2]])
@@ -850,6 +849,8 @@ class Board():
 
         # print("list nexts",self.listNextStates)
 
+
+
     def print_board(self):
         """
         Prints the current state of the board.
@@ -873,3 +874,4 @@ class Board():
         for i in range(33):
             buffer += "*"
         print(buffer)
+
