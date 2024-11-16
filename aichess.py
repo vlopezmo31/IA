@@ -8,6 +8,8 @@ Created on Thu Sep  8 11:22:03 2022
 import copy
 import math
 
+from networkx.classes import neighbors
+
 import chess
 import board
 import numpy as np
@@ -49,8 +51,8 @@ class Aichess():
         self.listVisitedStates = []
         self.listVisitedSituations = []
         self.pathToTarget = []
-        self.currentStateW = self.chess.boardSim.currentStateW
-        self.depthMax = 8
+        self.currentStateW = self.chess.boardSim.currentStateW;
+        self.depthMax = 8;
         self.checkMate = False
 
     def copyState(self, state):
@@ -91,6 +93,7 @@ class Aichess():
     def getListNextStatesB(self, myState):
         self.chess.boardSim.getListNextStatesB(myState)
         self.listNextStates = self.chess.boardSim.listNextStates.copy()
+
 
         return self.listNextStates
 
@@ -139,14 +142,14 @@ class Aichess():
         wrState = self.getPieceState(currentState, 2)
 
         # Si les negres maten el rei blanc, no és una configuració correcta
-        if wkState == None:
+        if wkState is None:
             return False
         # Mirem les possibles posicions del rei blanc i mirem si en alguna pot "matar" al rei negre
         for wkPosition in self.getNextPositions(wkState):
             if bkPosition == wkPosition:
                 # Tindríem un checkMate
                 return True
-        if wrState != None:
+        if wrState is not None:
             # Mirem les possibles posicions de la torre blanca i mirem si en alguna pot "matar" al rei negre
             for wrPosition in self.getNextPositions(wrState):
                 if bkPosition == wrPosition:
@@ -234,16 +237,18 @@ class Aichess():
 
     def getMovement(self, state, nextState):
         # Given a state and a successor state, return the postiion of the piece that has been moved in both states
+
         pieceState = None
         pieceNextState = None
         for piece in state:
             if piece not in nextState:
                 movedPiece = piece[2]
                 pieceNext = self.getPieceState(nextState, movedPiece)
-                if pieceNext != None:
+                if pieceNext is not None:
                     pieceState = piece
                     pieceNextState = pieceNext
                     break
+
 
         return [pieceState, pieceNextState]
 
@@ -257,9 +262,6 @@ class Aichess():
         wkState = self.getPieceState(currentState, 6)
         wrState = self.getPieceState(currentState, 2)
         brState = self.getPieceState(currentState, 8)
-
-        if bkState is None or wkState is None:
-            return value
 
         filaBk = bkState[0]
         columnaBk = bkState[1]
@@ -328,26 +330,6 @@ class Aichess():
 
         return value
 
-    def isTerminalState(self, state):
-        if not isinstance(state, list):
-            print(f"Invalid state format: {state}")
-            return True
-        wk = any(piece[2] == 6 for piece in state)
-        bk = any(piece[2] == 12 for piece in state)
-        return not wk or not bk
-
-    def validateState(self, state):
-
-        for i, state in enumerate(state):
-            bkState = self.getPieceState(state, 12)
-            wkState = self.getPieceState(state, 6)
-
-    def is_illegal_move(self, state, player):
-        if player:
-            return self.isWatchedWk(state)
-        else:
-            return self.isWatchedBk(state)
-
     def is_checkmate(self, current_state, color):
         self.newBoardSim(current_state)
         if color:
@@ -369,95 +351,131 @@ class Aichess():
             if not self.isWatchedBk(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB): return False
         return True
 
-    def minimaxGame(self, depthWhite, depthBlack):
+    def is_valid_state(self, current_state, player):
+        """
+        Verifica si un estado es válido basándose en el turno del jugador y la posición del rey.
+        """
+        if player and self.isWatchedWk(current_state):
+            return False  # Si es turno de las blancas y el rey blanco está en jaque
+        if not player and self.isWatchedBk(current_state):
+            return False  # Si es turno de las negras y el rey negro está en jaque
+        return True
 
-        def MIN_VALUE(state, depth, player):
+
+    def max_value(self, state, depth, player):
+        self.newBoardSim(state)
+
+        if depth <= 0 or self.is_checkmate(state, True) or self.is_checkmate(state, False):
+            return [None, self.heuristica(state, player)]
+
+        max_value = float('-inf')
+        best_move = None
+
+        self.newBoardSim(state)
+        if not player:
+            listNextStates = self.getListNextStatesB(state)
+        else:
+            listNextStates = self.getListNextStatesW(state)
+
+        neighbors = []
+        for neighbor in listNextStates:
+            neighbors.append(self.getMovement(state, neighbor))
+
+
+        for move_neighbor in neighbors:
+
             self.newBoardSim(state)
+            start, to = move_neighbor[0], move_neighbor[1]
 
-            if depth == 0 or self.is_checkmate(state, True) or self.is_checkmate(state, False):
-                return [None, self.heuristica(state, player)]
+            self.chess.moveSim(start, to, False)
 
-            min_value = float('inf')
-            best_move = None
+            current_state = self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB
 
-            self.newBoardSim(state)
-            sons = []
-            if player:
-                for i in self.getListNextStatesW(state): sons.append(self.getMovement(state, i))
-            else:
-                for j in self.getListNextStatesB(state): sons.append(self.getMovement(state, j))
+            if player and self.isWatchedWk(current_state): continue
+            if not player and self.isWatchedBk(current_state): continue
 
-            for son in sons:
-                self.newBoardSim(state)
-
-                start, to = son
-                self.chess.moveSim(start, to)
-
-                if self.is_illegal_move(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB, player):
-                    continue
-
-                _, value = MAX_VALUE(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB, depth - 1,
-                                     player)
-
-                if value < min_value:
-                    min_value = value
-                    best_move = son
-
-            if best_move is not None:
-                return [best_move, min_value]
-            else:
-                return [None, self.heuristica(state, True)]
-
-        def MAX_VALUE(state, depth, player):
-            self.newBoardSim(state)
-            if depth == 0 or self.is_checkmate(state, True) or self.is_checkmate(state, False):
-                return [None, self.heuristica(state, player)]
-            max_value = float('-inf')
-            best_move = None
-            self.newBoardSim(state)
-            sons = []
-            if player:
-                for i in self.getListNextStatesW(state): sons.append(self.getMovement(state, i))
-            else:
-                for j in self.getListNextStatesB(state): sons.append(self.getMovement(state, j))
-
-            for son in sons:
-                self.newBoardSim(state)
-
-                start, to = son
-                self.chess.moveSim(start, to)
-
-                if self.is_illegal_move(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB, player):
-                    continue
-
-                _, value = MIN_VALUE(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB,
-                                     depth - 1, player)
-                if value < max_value:
+            if True:
+                _, value = self.min_value(current_state, depth - 1, player)
+                if value > max_value:
                     max_value = value
-                    best_move = son
-            if best_move is not None:
-                return [best_move, max_value]
-            else:
-                return [None, self.heuristica(state, True)]
+                    best_move = move_neighbor
 
-        current_state = self.getCurrentState()
-        print(current_state)
+
+        if best_move is None:
+
+            return [None, self.heuristica(state, True)]
+        else:
+
+            return [best_move, max_value]
+
+
+    def min_value(self, state, depth, player):
+        self.newBoardSim(state)
+
+        if depth <= 0 or self.is_checkmate(state, True) or self.is_checkmate(state, False):
+            return [None, self.heuristica(state, player)]
+
+        min_value = float('inf')
+        best_move = None
+
+        self.newBoardSim(state)
+        if player: listNextStates = self.getListNextStatesB(state)
+        else: listNextStates = self.getListNextStatesW(state)
+
+        neighbors = []
+        for neighbor in listNextStates:
+            neighbors.append(self.getMovement(state, neighbor))
+
+        for move_neighbor in neighbors:
+
+
+            self.newBoardSim(state)
+            start, to = move_neighbor[0], move_neighbor[1]
+
+
+            self.chess.moveSim(start, to, False)
+
+
+
+            current_state = self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB
+
+            if player and self.isWatchedBk(current_state): continue
+            if not player and self.isWatchedWk(current_state): continue
+
+            if True:
+                _ , value = self.max_value(current_state, depth - 1, player)
+                if value < min_value:
+
+                    min_value = value
+                    best_move = move_neighbor
+        if best_move is None:
+            return [None, self.heuristica(state, True)]
+        else:
+            return [best_move, min_value]
+
+
+
+
+
+
+    def minimaxGame(self, depthWhite, depthBlack):
+        currentState = self.getCurrentState()
+
         player = True
-        while not self.is_checkmate(current_state, True) and not self.is_checkmate(current_state, False):
 
+        while not self.is_checkmate(currentState, True) and not self.is_checkmate(currentState, False):
             if player:
+                start, to = self.max_value(currentState, depthWhite, player)
 
-                next_move = MAX_VALUE(current_state, depthWhite, player)
-                self.chess.move(*next_move[0])
             else:
-                next_move = MIN_VALUE(current_state, depthBlack, player)
-                self.chess.move(*next_move[0])
+                start, to = self.max_value(currentState, depthBlack, player)
+
 
             player = not player
-            current_state = self.chess.board.currentStateW + self.chess.board.currentStateB
-            self.chess.board.printBoard()
 
-
+            self.chess.move(start[0], start[1])
+            currentState = self.chess.board.currentStateW + self.chess.board.currentStateB
+            self.chess.board.print_board()
 
     def alphaBetaPoda(self, depthWhite, depthBlack):
 

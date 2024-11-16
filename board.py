@@ -158,12 +158,13 @@ class Board():
 
         """
 
+        mypieces = [piece for piece in mypieces if self.board[piece[0]][piece[1]].color == True]
+
         self.listNextStates = []
 
         # print("mypieces",mypieces)
         # print("len ",len(mypieces))
         for j in range(len(mypieces)):
-
             self.listSuccessorStates = []
 
             mypiece = mypieces[j]
@@ -507,6 +508,8 @@ class Board():
 
         self.listNextStates = []
 
+        mypieces = [piece for piece in mypieces if self.board[piece[0]][piece[1]].color == False]
+
         # print("mypieces",mypieces)
         # print("len ",len(mypieces))
         for j in range(len(mypieces)):
@@ -849,8 +852,6 @@ class Board():
 
         # print("list nexts",self.listNextStates)
 
-
-
     def print_board(self):
         """
         Prints the current state of the board.
@@ -874,4 +875,3 @@ class Board():
         for i in range(33):
             buffer += "*"
         print(buffer)
-
