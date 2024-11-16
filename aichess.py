@@ -553,5 +553,5 @@ if __name__ == "__main__":
     aichess.chess.boardSim.print_board()
 
     # Run exercise 1
-    aichess.minimaxGame(4, 4)
+    aichess.minimaxGame(3, 4)
 # Add code to save results and continue with other exercises
