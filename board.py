@@ -514,6 +514,7 @@ class Board():
         # print("len ",len(mypieces))
         for j in range(len(mypieces)):
 
+
             self.listSuccessorStates = []
 
             mypiece = mypieces[j]
@@ -523,9 +524,11 @@ class Board():
 
             listPotentialNextStates = []
 
-            # print(str(self.board[mypiece[0]][mypiece[1]]))
+
+
 
             if (self.board[mypiece[0]][mypiece[1]].name == 'K'):
+
 
                 # print(" mypiece at  ",mypiece[0],mypiece[1])
                 listPotentialNextStates = [[mypiece[0] + 1, mypiece[1], 12], \

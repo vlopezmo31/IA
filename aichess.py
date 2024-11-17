@@ -331,36 +331,57 @@ class Aichess():
         return value
 
     def is_checkmate(self, current_state, color):
+        """
+        Verifica si el jugador está en jaque mate.
+
+        Parámetros:
+        -----------
+        current_state : list
+            El estado actual del tablero.
+        color : bool
+            True si el jugador es blanco, False si es negro.
+
+        Retorna:
+        --------
+        bool
+            True si el jugador está en jaque mate, False en caso contrario.
+        """
+        # Actualiza el tablero simulado con el estado actual
         self.newBoardSim(current_state)
-        if color:
-            wk_pos = self.getPieceState(current_state, 6)
-            self.chess.boardSim.getListNextStatesW([wk_pos])
-            wk_moves = self.chess.boardSim.listNextStates.copy()
-            for move in wk_moves:
-                self.newBoardSim(current_state)
-                self.chess.moveSim(wk_pos, move[0], False)
-                if not self.isWatchedWk(
-                    self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB): return False
-            return True
-        bk_pos = self.getPieceState(current_state, 12)
-        self.chess.boardSim.getListNextStatesB([bk_pos])
-        bk_moves = self.chess.boardSim.listNextStates.copy()
-        for move in bk_moves:
+
+        # Obtiene la posición del rey según el color del jugador
+        if color:  # Blancas
+            king_pos = self.getPieceState(current_state, 6)
+            if not king_pos:
+                return True  # Si no hay rey blanco en el tablero, es jaque mate
+            # Obtiene todos los posibles movimientos para las blancas
+            self.chess.boardSim.getListNextStatesW([king_pos])
+            possible_moves = self.chess.boardSim.listNextStates.copy()
+        else:  # Negras
+            king_pos = self.getPieceState(current_state, 12)
+            if not king_pos:
+                return True  # Si no hay rey negro en el tablero, es jaque mate
+            # Obtiene todos los posibles movimientos para las negras
+            self.chess.boardSim.getListNextStatesB([king_pos])
+            possible_moves = self.chess.boardSim.listNextStates.copy()
+
+        # Verifica si algún movimiento puede sacar al rey de jaque
+        for move in possible_moves:
+            # Simula el movimiento
             self.newBoardSim(current_state)
-            self.chess.moveSim(bk_pos, move[0], False)
-            if not self.isWatchedBk(self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB): return False
-        return True
+            self.chess.moveSim(king_pos, move[0], False)
 
-    def is_valid_state(self, current_state, player):
-        """
-        Verifica si un estado es válido basándose en el turno del jugador y la posición del rey.
-        """
-        if player and self.isWatchedWk(current_state):
-            return False  # Si es turno de las blancas y el rey blanco está en jaque
-        if not player and self.isWatchedBk(current_state):
-            return False  # Si es turno de las negras y el rey negro está en jaque
-        return True
+            # Obtén el nuevo estado del tablero tras el movimiento
+            new_state = self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB
 
+            # Si después de este movimiento el rey no está en jaque, no es jaque mate
+            if color and not self.isWatchedWk(new_state):  # Rey blanco no está en jaque
+                return False
+            if not color and not self.isWatchedBk(new_state):  # Rey negro no está en jaque
+                return False
+
+        # Si ningún movimiento puede sacar al rey de jaque, es jaque mate
+        return True
 
     def max_value(self, state, depth, player):
         self.newBoardSim(state)
@@ -382,11 +403,8 @@ class Aichess():
             neighbors.append(self.getMovement(state, neighbor))
 
 
-        for move_neighbor in neighbors:
-
+        for [start, to] in neighbors:
             self.newBoardSim(state)
-            start, to = move_neighbor[0], move_neighbor[1]
-
             self.chess.moveSim(start, to, False)
 
             current_state = self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB
@@ -395,17 +413,15 @@ class Aichess():
             if not player and self.isWatchedBk(current_state): continue
 
             if True:
-                _, value = self.min_value(current_state, depth - 1, player)
+                _ , value = self.min_value(current_state, depth - 1, player)
                 if value > max_value:
                     max_value = value
-                    best_move = move_neighbor
+                    best_move = [start, to]
 
 
         if best_move is None:
-
             return [None, self.heuristica(state, True)]
         else:
-
             return [best_move, max_value]
 
 
@@ -426,17 +442,11 @@ class Aichess():
         for neighbor in listNextStates:
             neighbors.append(self.getMovement(state, neighbor))
 
-        for move_neighbor in neighbors:
+        for [start, to] in neighbors:
 
 
             self.newBoardSim(state)
-            start, to = move_neighbor[0], move_neighbor[1]
-
-
             self.chess.moveSim(start, to, False)
-
-
-
             current_state = self.chess.boardSim.currentStateW + self.chess.boardSim.currentStateB
 
             if player and self.isWatchedBk(current_state): continue
@@ -447,15 +457,12 @@ class Aichess():
                 if value < min_value:
 
                     min_value = value
-                    best_move = move_neighbor
+                    best_move = [start, to]
         if best_move is None:
             return [None, self.heuristica(state, True)]
         else:
+
             return [best_move, min_value]
-
-
-
-
 
 
     def minimaxGame(self, depthWhite, depthBlack):
@@ -465,15 +472,14 @@ class Aichess():
 
         while not self.is_checkmate(currentState, True) and not self.is_checkmate(currentState, False):
             if player:
-                start, to = self.max_value(currentState, depthWhite, player)
+                (start, to), _ = self.max_value(currentState, depthWhite, player)
 
             else:
-                start, to = self.max_value(currentState, depthBlack, player)
-
+                (start, to), _ = self.max_value(currentState, depthBlack, player)
 
             player = not player
 
-            self.chess.move(start[0], start[1])
+            self.chess.move(start, to)
             currentState = self.chess.board.currentStateW + self.chess.board.currentStateB
             self.chess.board.print_board()
 
@@ -553,5 +559,5 @@ if __name__ == "__main__":
     aichess.chess.boardSim.print_board()
 
     # Run exercise 1
-    aichess.minimaxGame(3, 4)
-# Add code to save results and continue with other exercises
+    aichess.minimaxGame(4, 4)
+# Add code to save results and continue with other exercisesA
